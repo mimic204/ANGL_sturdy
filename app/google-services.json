@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "401923411619",
+    "project_id": "angl-app-d2dca",
+    "storage_bucket": "angl-app-d2dca.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:401923411619:android:9fd236a9f0ab74a652b916",
+        "android_client_info": {
+          "package_name": "com.example.do_an_app_adr"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB2ngBc3UJ7zUZ73xSVv0jLCHtfl1gODxc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

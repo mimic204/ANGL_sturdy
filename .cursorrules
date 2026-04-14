@@ -1,0 +1,42 @@
+# Android Development Rules - do_an_app_adr
+
+## General Principles
+- Use Kotlin for all logic.
+- Use Jetpack Compose for all UI.
+- Follow Material Design 3 (M3) guidelines.
+- Maintain a clean and modular architecture (MVVM/MVI recommended).
+- Ensure the app is responsive and supports different screen sizes (use Adaptive layouts).
+
+## Kotlin Standards
+- Prefer `val` over `var`.
+- Use trailing commas in function calls and declarations.
+- Follow Kotlin coding conventions (PascalCase for classes, camelCase for functions/variables).
+- Use `Scope Functions` (`let`, `run`, `apply`, `also`, `with`) appropriately.
+
+## Jetpack Compose Guidelines
+- Use `@Composable` functions for UI components.
+- State Management:
+    - Use `remember` and `rememberSaveable` for local UI state.
+    - Hoist state to ViewModels for business logic and persistence across configuration changes.
+    - Use `collectAsStateWithLifecycle()` to collect flows in Composable.
+- Layouts:
+    - Use `Scaffold` for the basic screen structure.
+    - Use `NavigationSuiteScaffold` for adaptive navigation (supporting mobile, tablet, and desktop).
+    - Prefer `Modifier` parameters in all Composables to allow customization from parents.
+- Resources:
+    - Use `stringResource()`, `painterResource()`, `colorResource()` etc., to access Android resources.
+    - Keep UI strings in `strings.xml` for localization support.
+
+## Architecture
+- **Model**: Data classes for domain and data layers.
+- **View**: Composable functions.
+- **ViewModel**: Use `androidx.lifecycle.viewmodel.compose.viewModel()` to manage UI logic and state.
+- **Repository**: Abstract data sources (Local/Remote).
+
+## Testing
+- Write unit tests for ViewModels and Repositories.
+- Use Compose Testing library for UI tests.
+
+## Specific Project Notes
+- This project uses `NavigationSuiteScaffold` for adaptive navigation.
+- Ensure all icons and labels are properly handled in `AppDestinations` or similar structures.
