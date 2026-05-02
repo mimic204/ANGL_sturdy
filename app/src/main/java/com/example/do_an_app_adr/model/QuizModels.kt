@@ -4,17 +4,17 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class QuizQuestion(
-    val question: String,
-    val options: Map<String, String>,
-    val correct_answer: String,
-    val explanation: String
+    val question: String = "",
+    val options: Map<String, String> = emptyMap(),
+    val correct_answer: String = "",
+    val explanation: String = ""
 )
 
 @Serializable
 data class Course(
-    val id: String,
-    val title: String,
-    val questions: List<QuizQuestion>
+    val id: String = "",
+    val title: String = "",
+    val questions: List<QuizQuestion> = emptyList()
 )
 
 @Serializable
@@ -51,17 +51,20 @@ data class UserSettings(
     val location: String? = null,
     val notificationsEnabled: Boolean = true,
     val friends: List<String> = emptyList(),
-    val friendRequests: List<String> = emptyList()
+    val friendRequests: List<String> = emptyList(),
+    val lastCourseId: String? = null,
+    val lastCourseTitle: String? = null,
+    val courseProgress: Map<String, Float> = emptyMap() // Map of courseId to progress (0.0 to 1.0)
 )
 
 @Serializable
 data class Post(
-    val id: String,
-    val authorName: String,
-    val authorEmail: String,
+    val id: String = "",
+    val authorName: String = "",
+    val authorEmail: String = "",
     val authorProfilePic: String? = null,
-    val content: String,
-    val timestamp: Long,
+    val content: String = "",
+    val timestamp: Long = 0L,
     val sharedCourse: Course? = null,
     val reactions: Map<String, Int> = emptyMap(),
     val likedBy: List<String> = emptyList(),
@@ -71,11 +74,11 @@ data class Post(
 
 @Serializable
 data class SocialComment(
-    val id: String,
-    val authorName: String,
+    val id: String = "",
+    val authorName: String = "",
     val authorEmail: String = "",
-    val content: String,
-    val timestamp: Long,
+    val content: String = "",
+    val timestamp: Long = 0L,
     val isVoiceComment: Boolean = false,
     val likes: Int = 0
 )

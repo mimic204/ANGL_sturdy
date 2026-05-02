@@ -1,15 +1,20 @@
 package com.example.do_an_app_adr.ui
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.example.do_an_app_adr.BuildConfig
 import com.google.ai.client.generativeai.GenerativeModel
 import com.google.ai.client.generativeai.type.generationConfig
 import kotlinx.coroutines.launch
@@ -24,118 +29,180 @@ fun AiGenScreen(
     var result by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val scrollState = rememberScrollState()
 
     // Cấu hình Model
     val config = generationConfig {
-        // Bỏ responseMimeType tạm thời nếu gặp lỗi 404 trên các phiên bản v1beta cũ
-        // responseMimeType = "application/json" 
+        // responseMimeType = "application/json"
     }
 
     val generativeModel = remember {
         GenerativeModel(
             modelName = "gemini-3-flash-preview",
-            apiKey = "AIzaSyDVJjfmxyJvIIkdh3J9M5FNyewseviGxlI",
+            apiKey = BuildConfig.GEMINI_API_KEY, // Sử dụng API Key từ BuildConfig để bảo mật
             generationConfig = config
         )
     }
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Tạo trắc nghiệm bằng AI") })
+            TopAppBar(
+                title = { Text("Tạo trắc nghiệm bằng AI") },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            )
         }
     ) { padding ->
-        Column(
+        // Box này giúp căn giữa nội dung trên màn hình lớn (như máy tính bảng)
+        Box(
             modifier = Modifier
-                .padding(padding)
                 .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(padding),
+            contentAlignment = Alignment.TopCenter
         ) {
-            OutlinedTextField(
-                value = prompt,
-                onValueChange = { prompt = it },
-                label = { Text("Nhập chủ đề trắc nghiệm") },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Ví dụ: Toán 12") }
-            )
+            Column(
+                modifier = Modifier
+                    .widthIn(max = 600.dp) // Giới hạn chiều rộng để hiển thị đẹp trên tablet
+                    .fillMaxSize()
+                    .verticalScroll(scrollState)
+                    .imePadding() // Tự động đẩy nội dung lên khi bàn phím hiện ra
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = "Nhập chủ đề bạn muốn tạo bài tập. AI sẽ giúp bạn soạn câu hỏi và đáp án tự động.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
 
-            Button(
-                onClick = {
-                    scope.launch {
-                        isLoading = true
-                        result = ""
-                        try {
-                            val fullPrompt = """
-                                Tạo 30 bài tập trắc nghiệm về chủ đề: $prompt.
+                OutlinedTextField(
+                    value = prompt,
+                    onValueChange = { prompt = it },
+                    label = { Text("Chủ đề trắc nghiệm") },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Ví dụ: Toán lớp 12, Lịch sử Việt Nam...") },
+                    keyboardOptions = KeyboardOptions(
+                        capitalization = KeyboardCapitalization.Sentences,
+                        autoCorrectEnabled = true,
+                        keyboardType = KeyboardType.Text,
+                        imeAction = ImeAction.Done
+                    ),
+                    shape = MaterialTheme.shapes.medium
+                )
+
+                Button(
+                    onClick = {
+                        scope.launch {
+                            isLoading = true
+                            result = ""
+                            try {
+                                val fullPrompt = """
+                                    Hãy tạo 10 bài tập trắc nghiệm bằng tiếng Việt về chủ đề: ${prompt}.
+                                    
+                                    Yêu cầu JSON format (CHỈ TRẢ VỀ JSON, KHÔNG KÈM TEXT KHÁC):
+                                    [
+                                      {
+                                        "question": "Câu hỏi bằng tiếng Việt",
+                                        "options": {
+                                          "A": "Lựa chọn 1",
+                                          "B": "Lựa chọn 2",
+                                          "C": "Lựa chọn 3",
+                                          "D": "Lựa chọn 4"
+                                        },
+                                        "correct_answer": "A",
+                                        "explanation": "Giải thích chi tiết bằng tiếng Việt"
+                                      }
+                                    ]
+                                """.trimIndent()
                                 
-                                Yêu cầu JSON format:
-                                [
-                                  {
-                                    "question": "Câu hỏi",
-                                    "options": {
-                                      "A": "...",
-                                      "B": "...",
-                                      "C": "...",
-                                      "D": "..."
-                                    },
-                                    "correct_answer": "A",
-                                    "explanation": "Giải thích ngắn"
-                                  }
-                                ]
+                                val response = generativeModel.generateContent(fullPrompt)
+                                val jsonText = response.text ?: ""
                                 
-                                Trả về kết quả dưới dạng JSON.
-                            """.trimIndent()
-                            
-                            val response = generativeModel.generateContent(fullPrompt)
-                            val jsonText = response.text ?: ""
-                            
-                            if (jsonText.isNotEmpty()) {
-                                val success = viewModel.addCourseFromJson(prompt, jsonText)
-                                if (success) {
-                                    onCourseCreated()
+                                if (jsonText.isNotEmpty()) {
+                                    viewModel.addCourseFromJson(prompt, jsonText) { success ->
+                                        if (success) {
+                                            onCourseCreated()
+                                        } else {
+                                            result = "Lỗi khi phân tích JSON từ AI. Hãy thử lại."
+                                        }
+                                    }
                                 } else {
-                                    result = "Lỗi khi phân tích JSON từ AI. Hãy thử lại."
+                                    result = "AI không trả về kết quả. Hãy thử lại."
                                 }
+                            } catch (e: Exception) {
+                                result = "Lỗi kết nối AI: ${e.localizedMessage}"
+                            } finally {
+                                isLoading = false
                             }
-                        } catch (e: Exception) {
-                            result = "Lỗi hệ thống: ${e.localizedMessage}"
-                        } finally {
-                            isLoading = false
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    enabled = prompt.isNotBlank() && !isLoading,
+                    shape = MaterialTheme.shapes.medium
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Icon(Icons.Default.AutoAwesome, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Bắt đầu tạo bài")
+                    }
+                }
+
+                if (result.isNotEmpty()) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        ),
+                        shape = MaterialTheme.shapes.medium
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = "Thông báo",
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = result,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
                         }
                     }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = prompt.isNotBlank() && !isLoading
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
-                } else {
-                    Icon(Icons.Default.AutoAwesome, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Tạo bài tập")
+                } else if (!isLoading) {
+                    // Trạng thái chờ
+                    Spacer(modifier = Modifier.height(32.dp))
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AutoAwesome,
+                            contentDescription = null,
+                            modifier = Modifier.size(48.dp),
+                            tint = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            "Chờ nhập chủ đề...",
+                            color = MaterialTheme.colorScheme.outline,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
                 }
-            }
-
-            if (result.isNotEmpty()) {
-                Text(
-                    text = "Thông báo:",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.error
-                )
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
-                ) {
-                    Text(
-                        text = result,
-                        modifier = Modifier.padding(16.dp),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-            } else if (!isLoading) {
-                Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                    Text("Nhập chủ đề để bắt đầu", color = MaterialTheme.colorScheme.outline)
-                }
+                
+                // Thêm khoảng trống cuối để tránh nội dung bị sát mép khi cuộn
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }
